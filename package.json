@@ -1,0 +1,44 @@
+{
+  "name": "visiondev",
+  "displayName": "VisionDev",
+  "publisher": "dev",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:visiondev.start"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "visiondev.start",
+        "title": "VisionDev: Start"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run compile"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "latest",
+    "pixelmatch": "latest",
+    "playwright": "latest",
+    "pngjs": "latest",
+    "ws": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/pngjs": "^6.0.5",
+    "@types/vscode": "^1.85.0",
+    "@types/ws": "latest",
+    "typescript": "^5.6.3"
+  }
+}

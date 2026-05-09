@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "visiondev": {
+      "command": "node",
+      "args": ["/absolute/path/to/out/server.js"],
+      "transport": "stdio",
+      "env": {
+        "VISIONDEV_WS_PORT": "51051"
+      }
+    }
+  }
+}

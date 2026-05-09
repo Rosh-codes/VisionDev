@@ -1,0 +1,1 @@
+claude mcp add --transport stdio visiondev -- node /absolute/path/to/out/server.js

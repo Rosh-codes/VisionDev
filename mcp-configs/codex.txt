@@ -1,0 +1,7 @@
+[mcp_servers.visiondev]
+command = "node"
+args = ["/absolute/path/to/out/server.js"]
+transport = "stdio"
+
+[mcp_servers.visiondev.env]
+VISIONDEV_WS_PORT = "51051"
