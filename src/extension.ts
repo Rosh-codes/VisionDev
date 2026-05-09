@@ -115,8 +115,10 @@ interface McpConfig {
   mcpServers?: Record<
     string,
     {
+      type?: string;
       command: string;
       args?: string[];
+      /** @deprecated Cursor expects `type: "stdio"` instead */
       transport?: string;
       env?: Record<string, string>;
     }
@@ -160,9 +162,9 @@ async function connectCliToWorkspace(context: vscode.ExtensionContext): Promise<
 
   config.mcpServers = config.mcpServers ?? {};
   config.mcpServers.visiondev = {
+    type: "stdio",
     command: getNodeBinary(),
     args: [serverJs],
-    transport: "stdio",
     env: { VISIONDEV_WS_PORT: String(WS_PORT) }
   };
 

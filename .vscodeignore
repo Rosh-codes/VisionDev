@@ -1,6 +1,7 @@
 .vscode/**
 .git/**
-node_modules/**
+.cursor/**
+# Keep production node_modules so the packaged MCP server and extension load deps at runtime.
 src/**
 mcp-configs/**
 **/*.map

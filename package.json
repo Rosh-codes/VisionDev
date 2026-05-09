@@ -2,7 +2,7 @@
   "name": "visiondev",
   "displayName": "VisionDev",
   "description": "Live visual + behavior debugging for AI coding assistants. Lets Cursor / Claude Code / Copilot / Codex drive a real browser to verify UI changes and report PASS/FAIL with structured evidence.",
-  "publisher": "dev",
+  "publisher": "SanidhyaThakur",
   "version": "0.2.0",
   "license": "MIT",
   "engines": {
@@ -60,8 +60,8 @@
     "copy-assets": "node -e \"const fs=require('fs'),p=require('path');fs.mkdirSync('out',{recursive:true});fs.copyFileSync('src/panel.html','out/panel.html');\"",
     "watch": "tsc -watch -p ./",
     "vscode:prepublish": "npm run compile",
-    "package": "npm run compile && npx --yes @vscode/vsce@^2 package --no-yarn --no-dependencies",
-    "publish:vsce": "npm run compile && npx --yes @vscode/vsce@^2 publish --no-yarn --no-dependencies",
+    "package": "npm run compile && npx --yes @vscode/vsce@^2 package --no-yarn",
+    "publish:vsce": "npm run compile && npx --yes @vscode/vsce@^2 publish --no-yarn",
     "playwright:install": "npx playwright install chromium"
   },
   "dependencies": {
