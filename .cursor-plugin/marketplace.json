@@ -1,0 +1,22 @@
+{
+  "name": "visiondev",
+  "owner": {
+    "name": "Sanidhya Thakur"
+  },
+  "metadata": {
+    "description": "VisionDev — rules + setup for the VisionDev browser MCP. Install the VisionDev extension from the VS Code Marketplace, then Connect in Cursor."
+  },
+  "plugins": [
+    {
+      "name": "visiondev",
+      "source": "cursor-plugin",
+      "description": "Agent rules and docs for VisionDev headed Chromium & MCP tools (vision_open, vision_observe, vision_act, vision_assert). Requires the VisionDev VS Code extension.",
+      "version": "0.2.1",
+      "license": "MIT",
+      "repository": "https://github.com/Rosh-codes/VisionDev",
+      "homepage": "https://github.com/Rosh-codes/VisionDev",
+      "logo": "cursor-plugin/assets/icon.png",
+      "keywords": ["mcp", "playwright", "browser", "testing", "e2e", "visiondev", "copilot"]
+    }
+  ]
+}

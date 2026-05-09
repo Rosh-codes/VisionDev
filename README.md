@@ -11,9 +11,9 @@ Use plain English. The agent picks the right tools.
 ## Install
 
 1. Install the extension from the VS Code / Cursor marketplace (or the bundled `.vsix`).
-2. Run **VisionDev: Connect CLI to this workspace** from the command palette. This writes `.cursor/mcp.json` for you.
-3. (Recommended) Run **VisionDev: Install Agent Guidance (AGENTS.md)** so Cursor uses VisionDev from plain-English prompts without you naming any tool.
-4. Reload the Cursor window.
+2. Run **VisionDev: Connect MCP (Cursor + VS Code Copilot)** from the command palette. This writes **`.cursor/mcp.json`** (Cursor) and **`.vscode/mcp.json`** (VS Code + [GitHub Copilot MCP](https://code.visualstudio.com/docs/copilot/reference/mcp-configuration)).
+3. (Recommended) Run **VisionDev: Install Agent Guidance (AGENTS.md)** so the agent uses VisionDev from plain-English prompts without you naming any tool.
+4. Reload the editor window.
 
 That's it. The first time you ask Cursor to verify a UI flow, Chromium will open, install if needed, and start driving itself.
 
@@ -50,27 +50,40 @@ The panel mirrors the browser viewport at ~15fps via Chromium DevTools Protocol 
 | Command | What it does |
 | --- | --- |
 | `VisionDev: Open Panel` | Show the activity panel and live browser mirror |
-| `VisionDev: Connect CLI to this workspace` | Write `.cursor/mcp.json` pointing at the bundled MCP server |
+| `VisionDev: Connect MCP (Cursor + VS Code Copilot)` | Write `.cursor/mcp.json` and `.vscode/mcp.json` pointing at the bundled MCP server |
 | `VisionDev: Install Agent Guidance (AGENTS.md)` | Drop a primer into your repo so Cursor uses VisionDev from plain English |
 
 ## Manual MCP config (advanced)
 
-If you'd rather wire it up by hand:
+**Cursor** (`.cursor/mcp.json`): top-level **`mcpServers`**, **`"type": "stdio"`** (not `transport`).
+
+**VS Code + Copilot** (`.vscode/mcp.json`): top-level **`servers`**, **`"type": "stdio"`** — [reference](https://code.visualstudio.com/docs/copilot/reference/mcp-configuration).
 
 ```json
 {
   "mcpServers": {
     "visiondev": {
+      "type": "stdio",
       "command": "node",
-      "args": ["<absolute path to>/out/server.js"],
-      "transport": "stdio",
+      "args": ["<absolute path to extension>/out/server.js"],
       "env": { "VISIONDEV_WS_PORT": "51051" }
     }
   }
 }
 ```
 
-Same shape works in `.vscode/mcp.json` (Copilot), `~/.codex/config.toml` (Codex), and Claude Code.
+```json
+{
+  "servers": {
+    "visiondev": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["<absolute path to extension>/out/server.js"],
+      "env": { "VISIONDEV_WS_PORT": "51051" }
+    }
+  }
+}
+```
 
 ## Costs
 
