@@ -111,6 +111,17 @@ function getMcpConfigPath(): { workspacePath: string; configPath: string } | und
   };
 }
 
+function getVsCodeMcpConfigPath(workspacePath: string): string {
+  return path.join(workspacePath, ".vscode", "mcp.json");
+}
+
+interface StdioMcpServerEntry {
+  type: "stdio";
+  command: string;
+  args: string[];
+  env: Record<string, string>;
+}
+
 interface McpConfig {
   mcpServers?: Record<
     string,
@@ -125,11 +136,17 @@ interface McpConfig {
   >;
 }
 
+/** GitHub Copilot / VS Code uses `.vscode/mcp.json` with top-level `servers`. */
+interface VsCodeMcpConfig {
+  servers?: Record<string, StdioMcpServerEntry | Record<string, unknown>>;
+  inputs?: unknown[];
+}
+
 async function connectCliToWorkspace(context: vscode.ExtensionContext): Promise<void> {
   const target = getMcpConfigPath();
   if (!target) {
     void vscode.window.showErrorMessage(
-      "Open a folder/workspace first, then run VisionDev: Connect CLI again."
+      "Open a folder/workspace first, then run VisionDev: Connect again."
     );
     return;
   }
@@ -142,7 +159,14 @@ async function connectCliToWorkspace(context: vscode.ExtensionContext): Promise<
     return;
   }
 
-  fs.mkdirSync(path.dirname(target.configPath), { recursive: true });
+  const serverEntry: StdioMcpServerEntry = {
+    type: "stdio",
+    command: getNodeBinary(),
+    args: [serverJs],
+    env: { VISIONDEV_WS_PORT: String(WS_PORT) }
+  };
+
+  const vscodeMcpPath = getVsCodeMcpConfigPath(target.workspacePath);
 
   let config: McpConfig = {};
   if (fs.existsSync(target.configPath)) {
@@ -160,18 +184,36 @@ async function connectCliToWorkspace(context: vscode.ExtensionContext): Promise<
     }
   }
 
+  let vscodeConfig: VsCodeMcpConfig = {};
+  if (fs.existsSync(vscodeMcpPath)) {
+    try {
+      vscodeConfig = JSON.parse(fs.readFileSync(vscodeMcpPath, "utf8")) as VsCodeMcpConfig;
+    } catch {
+      const overwrite = await vscode.window.showWarningMessage(
+        "Existing .vscode/mcp.json is not valid JSON. Replace file (VisionDev only; fix JSON by hand first to keep other servers)?",
+        { modal: true },
+        "Replace",
+        "Cancel"
+      );
+      if (overwrite !== "Replace") return;
+      vscodeConfig = {};
+    }
+  }
+
   config.mcpServers = config.mcpServers ?? {};
-  config.mcpServers.visiondev = {
-    type: "stdio",
-    command: getNodeBinary(),
-    args: [serverJs],
-    env: { VISIONDEV_WS_PORT: String(WS_PORT) }
-  };
+  config.mcpServers.visiondev = serverEntry;
+
+  vscodeConfig.servers = vscodeConfig.servers ?? {};
+  vscodeConfig.servers.visiondev = serverEntry;
+
+  fs.mkdirSync(path.dirname(target.configPath), { recursive: true });
+  fs.mkdirSync(path.dirname(vscodeMcpPath), { recursive: true });
 
   fs.writeFileSync(target.configPath, JSON.stringify(config, null, 2) + "\n", "utf8");
+  fs.writeFileSync(vscodeMcpPath, JSON.stringify(vscodeConfig, null, 2) + "\n", "utf8");
 
   const action = await vscode.window.showInformationMessage(
-    "VisionDev connected to Cursor (.cursor/mcp.json). Reload the window for Cursor to pick up the new MCP server.",
+    "VisionDev MCP: wrote .cursor/mcp.json (Cursor) and .vscode/mcp.json (VS Code Copilot). Reload the window.",
     "Reload Window",
     "Later"
   );
@@ -253,17 +295,23 @@ function openOrFocusPanel(context: vscode.ExtensionContext): vscode.WebviewPanel
   return panel;
 }
 
+function workspaceHasVisionDevMcp(workspacePath: string): boolean {
+  const cursorP = path.join(workspacePath, ".cursor", "mcp.json");
+  const vscodeP = getVsCodeMcpConfigPath(workspacePath);
+  const has = (p: string): boolean =>
+    fs.existsSync(p) && fs.readFileSync(p, "utf8").includes("\"visiondev\"");
+  return has(cursorP) || has(vscodeP);
+}
+
 async function maybeOfferFirstTimeSetup(context: vscode.ExtensionContext): Promise<void> {
   const target = getMcpConfigPath();
   if (!target) return;
-  const alreadyRegistered =
-    fs.existsSync(target.configPath) &&
-    fs.readFileSync(target.configPath, "utf8").includes("\"visiondev\"");
+  const alreadyRegistered = workspaceHasVisionDevMcp(target.workspacePath);
   const dismissedKey = "visiondev.firstRunDismissed";
   if (alreadyRegistered || context.globalState.get<boolean>(dismissedKey)) return;
 
   const action = await vscode.window.showInformationMessage(
-    "VisionDev is installed. Connect it to Cursor's MCP for this workspace?",
+    "VisionDev: connect MCP for this workspace? Writes .cursor/mcp.json and .vscode/mcp.json (Copilot).",
     "Connect",
     "Not now",
     "Don't show again"

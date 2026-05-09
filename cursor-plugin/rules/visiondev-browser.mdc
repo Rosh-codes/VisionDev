@@ -1,0 +1,26 @@
+---
+description: When to use VisionDev MCP for real browser UI in Cursor
+alwaysApply: false
+globs:
+  - "**/*.{tsx,ts,jsx,js,html,vue,svelte}"
+---
+
+# VisionDev (browser MCP)
+
+When the user needs **clicks, typing, login, navigation, forms, or verifying toasts/errors/URLs** on a real site (including **localhost**), use the **VisionDev** MCP tools.
+
+## Setup (once per machine)
+
+1. Install **VisionDev** from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanidhyaThakur.visiondev).
+2. In Cursor: **VisionDev: Connect MCP (Cursor + VS Code Copilot)** — writes `.cursor/mcp.json` and `.vscode/mcp.json`.
+3. Reload the window. Run **`npx playwright install chromium`** if needed.
+
+## Tools
+
+1. **vision_open** — open `url`, `device`: mobile | desktop.
+2. **vision_observe** — refresh snapshot after DOM/route changes; **IDs change every time**.
+3. **vision_act** — use **only** IDs from the latest snapshot.
+4. **vision_wait** / **vision_assert** — async UI and checks.
+5. **vision_close** — end session.
+
+Do not invent CSS selectors. On **vision_act** error, **vision_observe** again and retry.

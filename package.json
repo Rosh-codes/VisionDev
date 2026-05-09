@@ -3,8 +3,13 @@
   "displayName": "VisionDev",
   "description": "Live visual + behavior debugging for AI coding assistants. Lets Cursor / Claude Code / Copilot / Codex drive a real browser to verify UI changes and report PASS/FAIL with structured evidence.",
   "publisher": "SanidhyaThakur",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "license": "MIT",
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#0f172a",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -27,10 +32,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/visiondev/visiondev.git"
+    "url": "https://github.com/Rosh-codes/VisionDev.git"
   },
   "bugs": {
-    "url": "https://github.com/visiondev/visiondev/issues"
+    "url": "https://github.com/Rosh-codes/VisionDev/issues"
   },
   "activationEvents": [
     "onStartupFinished"
@@ -45,7 +50,7 @@
       },
       {
         "command": "visiondev.connect",
-        "title": "VisionDev: Connect CLI to this workspace",
+        "title": "VisionDev: Connect MCP (Cursor + VS Code Copilot)",
         "category": "VisionDev"
       },
       {

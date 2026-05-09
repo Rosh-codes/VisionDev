@@ -1,0 +1,13 @@
+{
+  "name": "visiondev",
+  "version": "0.2.1",
+  "description": "Rules and setup for VisionDev browser MCP. Install the VisionDev extension from the VS Code Marketplace, run VisionDev: Connect MCP, then reload.",
+  "author": {
+    "name": "Sanidhya Thakur"
+  },
+  "homepage": "https://github.com/Rosh-codes/VisionDev",
+  "repository": "https://github.com/Rosh-codes/VisionDev",
+  "license": "MIT",
+  "logo": "assets/icon.png",
+  "keywords": ["mcp", "playwright", "browser", "testing", "e2e", "visiondev", "ai"]
+}
