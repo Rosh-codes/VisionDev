@@ -1,4 +1,4 @@
-import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
+import { chromium, type Browser, type BrowserContext, type CDPSession, type Page } from "playwright";
 
 export type ViewportName = "mobile" | "desktop";
 
@@ -334,6 +334,8 @@ export class VisionSession {
   private page?: Page;
   private currentDevice: ViewportName = "desktop";
   private emit: EventEmitter | undefined;
+  private cdp?: CDPSession;
+  private screencastActive = false;
 
   constructor(emit?: EventEmitter) {
     this.emit = emit;
@@ -345,6 +347,55 @@ export class VisionSession {
 
   setEmitter(emit: EventEmitter | undefined): void {
     this.emit = emit;
+  }
+
+  private async startScreencast(): Promise<void> {
+    if (this.screencastActive || !this.page || !this.context) return;
+    try {
+      this.cdp = await this.context.newCDPSession(this.page);
+      this.cdp.on("Page.screencastFrame", async (event: { data: string; sessionId: number }) => {
+        try {
+          this.emit?.({
+            type: "frame",
+            label: "live",
+            viewport: this.currentDevice,
+            data: event.data
+          });
+        } finally {
+          try {
+            await this.cdp?.send("Page.screencastFrameAck", { sessionId: event.sessionId });
+          } catch {
+            /* ignore */
+          }
+        }
+      });
+      await this.cdp.send("Page.startScreencast", {
+        format: "jpeg",
+        quality: 60,
+        maxWidth: 1280,
+        maxHeight: 800,
+        everyNthFrame: 2
+      });
+      this.screencastActive = true;
+    } catch {
+      /* CDP screencast is best-effort; ignore failures */
+    }
+  }
+
+  private async stopScreencast(): Promise<void> {
+    if (!this.cdp) return;
+    try {
+      await this.cdp.send("Page.stopScreencast");
+    } catch {
+      /* ignore */
+    }
+    try {
+      await this.cdp.detach();
+    } catch {
+      /* ignore */
+    }
+    this.cdp = undefined;
+    this.screencastActive = false;
   }
 
   private log(level: "info" | "warn" | "error", message: string, meta?: Record<string, unknown>): void {
@@ -366,6 +417,7 @@ export class VisionSession {
       });
     }
     if (this.context && this.currentDevice !== device) {
+      await this.stopScreencast();
       await this.context.close().catch(() => undefined);
       this.context = undefined;
       this.page = undefined;
@@ -374,6 +426,9 @@ export class VisionSession {
       this.context = await this.browser.newContext({ viewport: VIEWPORTS[device] });
       this.currentDevice = device;
       this.page = await this.context.newPage();
+    }
+    if (!this.screencastActive) {
+      await this.startScreencast();
     }
     const page = this.page!;
     try {
@@ -547,6 +602,7 @@ export class VisionSession {
   }
 
   async close(): Promise<void> {
+    await this.stopScreencast();
     try {
       await this.context?.close();
     } catch {

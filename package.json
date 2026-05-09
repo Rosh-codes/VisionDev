@@ -1,30 +1,68 @@
 {
   "name": "visiondev",
   "displayName": "VisionDev",
+  "description": "Live visual + behavior debugging for AI coding assistants. Lets Cursor / Claude Code / Copilot / Codex drive a real browser to verify UI changes and report PASS/FAIL with structured evidence.",
   "publisher": "dev",
-  "version": "0.0.1",
+  "version": "0.2.0",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
+    "Testing",
+    "Debuggers",
     "Other"
   ],
+  "keywords": [
+    "ai",
+    "agent",
+    "mcp",
+    "playwright",
+    "browser",
+    "testing",
+    "visual",
+    "cursor",
+    "claude",
+    "copilot"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/visiondev/visiondev.git"
+  },
+  "bugs": {
+    "url": "https://github.com/visiondev/visiondev/issues"
+  },
   "activationEvents": [
-    "onCommand:visiondev.start"
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "visiondev.start",
-        "title": "VisionDev: Start"
+        "title": "VisionDev: Open Panel",
+        "category": "VisionDev"
+      },
+      {
+        "command": "visiondev.connect",
+        "title": "VisionDev: Connect CLI to this workspace",
+        "category": "VisionDev"
+      },
+      {
+        "command": "visiondev.installAgentsMd",
+        "title": "VisionDev: Install Agent Guidance (AGENTS.md)",
+        "category": "VisionDev"
       }
     ]
   },
   "scripts": {
-    "compile": "tsc -p ./",
+    "compile": "tsc -p ./ && npm run copy-assets",
+    "copy-assets": "node -e \"const fs=require('fs'),p=require('path');fs.mkdirSync('out',{recursive:true});fs.copyFileSync('src/panel.html','out/panel.html');\"",
     "watch": "tsc -watch -p ./",
-    "vscode:prepublish": "npm run compile"
+    "vscode:prepublish": "npm run compile",
+    "package": "npm run compile && npx --yes @vscode/vsce@^2 package --no-yarn --no-dependencies",
+    "publish:vsce": "npm run compile && npx --yes @vscode/vsce@^2 publish --no-yarn --no-dependencies",
+    "playwright:install": "npx playwright install chromium"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "latest",

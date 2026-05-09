@@ -71,7 +71,7 @@ async function main(): Promise<void> {
     {
       title: "VisionDev Open",
       description:
-        "Launch (or reuse) a headed Chromium browser, navigate to the URL, and return a compact accessibility snapshot of interactive elements with stable IDs you reference in vision_act. Always returns the post-navigation observation.",
+        "Open a real, visible Chromium browser at the given URL and return a numbered list of every interactive element on the page (each with a stable ID, role, and accessible name). USE THIS WHENEVER the user asks you to verify, test, debug, reproduce, or check behavior of a web app — for example: 'log in and check ...', 'this button doesn't work', 'try clicking ...', 'fill the form with ...', 'go to /profile and ...'. Always call vision_open FIRST, then loop vision_observe → vision_act → vision_observe → vision_assert. Do NOT ask the user for CSS selectors; you choose elements by ID from the snapshot. The browser stays open across calls so subsequent actions are instant.",
       inputSchema: {
         url: z.string().url(),
         device: z.enum(["mobile", "desktop"]).default("desktop")
@@ -89,7 +89,7 @@ async function main(): Promise<void> {
     {
       title: "VisionDev Observe",
       description:
-        "Re-scan the current page and return numbered interactive elements + observed toasts/alerts/errors. Call after any page change. Element IDs are reassigned on every call.",
+        "Re-scan the currently open page and return its numbered interactive elements PLUS any visible toasts, alerts, and error messages. Call this whenever the page may have changed (after a click, navigation, form submit, async load). Element IDs are reassigned each call — always observe before acting if you're unsure. The 'evidence' field tells you if a toast or error appeared (use this to diagnose failures).",
       inputSchema: {}
     },
     async () => {
@@ -104,7 +104,7 @@ async function main(): Promise<void> {
     {
       title: "VisionDev Act",
       description:
-        "Perform an action on an element by its ID from the latest snapshot. Actions: click, fill (requires value), press (requires key), hover, select (requires value), clear. Returns the post-action snapshot.",
+        "Perform a single user action on an element BY ITS NUMERIC ID from the latest vision_open or vision_observe snapshot. Actions: 'click' (no value), 'fill' (value=text to type), 'press' (key=key name like Enter/Tab), 'hover', 'select' (value=option), 'clear'. Returns a fresh snapshot of the resulting page state. If the element vanishes or a route change happens, IDs invalidate — call vision_observe again. NEVER guess CSS selectors; only use IDs from observe output.",
       inputSchema: {
         id: z.number().int().positive(),
         action: z.enum(["click", "fill", "press", "hover", "select", "clear"]),
@@ -133,7 +133,8 @@ async function main(): Promise<void> {
     "vision_navigate",
     {
       title: "VisionDev Navigate",
-      description: "Navigate the existing browser to a new URL and return the new snapshot.",
+      description:
+        "Navigate the EXISTING browser session to a new URL (no relaunch) and return a fresh snapshot. Use for SPA route changes or jumping to a different page in the same flow.",
       inputSchema: { url: z.string().url() }
     },
     async ({ url }) => {
@@ -148,7 +149,7 @@ async function main(): Promise<void> {
     {
       title: "VisionDev Wait",
       description:
-        "Wait for a condition (urlContains | textVisible | selectorVisible | ms) then return a fresh snapshot. Use after async UI transitions.",
+        "Wait until a condition becomes true, then return a fresh snapshot. Use AFTER actions that trigger async work (login redirect, route change, modal open). Kinds: 'urlContains' (value=substring of URL), 'textVisible' (value=text shown on page), 'selectorVisible' (value=CSS), 'ms' (value=milliseconds). Prefer urlContains/textVisible over fixed ms waits.",
       inputSchema: {
         kind: z.enum(["urlContains", "textVisible", "selectorVisible", "ms"]),
         value: z.union([z.string(), z.number()]),
@@ -172,7 +173,7 @@ async function main(): Promise<void> {
     {
       title: "VisionDev Assert",
       description:
-        "Verify a condition: textVisible, urlContains, errorVisible, toastVisible, elementValue (id+equals), elementVisible (id). Returns { pass, message, evidence }.",
+        "Verify the FINAL state of the flow and return { pass, message, evidence }. ALWAYS end a debugging session with at least one assert so you have a structured PASS/FAIL to report to the user. Kinds: 'textVisible' (specific text on page), 'urlContains' (URL substring), 'errorVisible' (any visible error/toast/alert; optionally match text), 'toastVisible' (snackbar/alert with text), 'elementValue' (input id keeps a specific value), 'elementVisible' (element id is on screen).",
       inputSchema: {
         kind: z.enum([
           "textVisible",
@@ -220,7 +221,7 @@ async function main(): Promise<void> {
     {
       title: "VisionDev Screenshot",
       description:
-        "Capture the current viewport as base64 PNG and forward to the panel. Use sparingly; prefer vision_observe for state.",
+        "Push the current viewport as a high-quality PNG to the VisionDev panel. The image bytes are NOT returned to you (to save tokens) — call this only when the user explicitly asks for a snapshot or you want to mark a moment in the panel. Prefer vision_observe for understanding page state.",
       inputSchema: {}
     },
     async () => {
@@ -239,7 +240,8 @@ async function main(): Promise<void> {
     "vision_close",
     {
       title: "VisionDev Close",
-      description: "Close the browser and end the session.",
+      description:
+        "Close the browser session. Only call this when the user is fully done debugging — keeping the session open between turns is faster and what users expect (the browser stays put while they iterate).",
       inputSchema: {}
     },
     async () => {
