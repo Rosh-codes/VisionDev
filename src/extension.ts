@@ -2,11 +2,11 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import WebSocket, { WebSocketServer } from "ws";
-import { type VisionFrameEvent, type VisionStatusEvent } from "./bridge";
+import { type VisionFrameEvent, type VisionLogEvent, type VisionStatusEvent } from "./bridge";
 
 const WS_PORT = 51051;
 
-type PanelEvent = VisionFrameEvent | VisionStatusEvent;
+type PanelEvent = VisionFrameEvent | VisionStatusEvent | VisionLogEvent;
 
 let statusBarItem: vscode.StatusBarItem | undefined;
 let wsServer: WebSocketServer | undefined;
@@ -44,7 +44,7 @@ function isPanelEvent(value: unknown): value is PanelEvent {
     return false;
   }
   const maybe = value as { type?: unknown };
-  return maybe.type === "status" || maybe.type === "frame";
+  return maybe.type === "status" || maybe.type === "frame" || maybe.type === "log";
 }
 
 function startBridge(panel: vscode.WebviewPanel): void {
@@ -67,7 +67,8 @@ function startBridge(panel: vscode.WebviewPanel): void {
           if (parsed.state === "running") {
             setRunningStatus();
           } else if (parsed.state === "done" && parsed.result) {
-            setResultStatus(parsed.result.status);
+            const r = parsed.result as { status?: "PASS" | "FAIL" };
+            setResultStatus(r.status === "PASS" ? "PASS" : "FAIL");
           } else {
             setIdleStatus();
           }

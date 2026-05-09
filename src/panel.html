@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VisionDev</title>
   <style>
-    :root {
-      color-scheme: light dark;
-    }
+    :root { color-scheme: light dark; }
     body {
       margin: 0;
       padding: 12px;
@@ -19,67 +17,45 @@
       flex-direction: column;
       gap: 12px;
     }
-    .status-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--vscode-disabledForeground);
-    }
-    .tabs {
-      display: none;
-      gap: 8px;
-    }
-    .tab {
-      border: 1px solid var(--vscode-panel-border);
-      background: var(--vscode-editor-background);
-      color: var(--vscode-editor-foreground);
-      border-radius: 999px;
-      padding: 4px 10px;
-      cursor: pointer;
-    }
-    .tab.active {
-      background: var(--vscode-button-background);
-      color: var(--vscode-button-foreground);
-      border-color: var(--vscode-button-background);
-    }
-    .image-row {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-    }
-    .cell {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .label {
-      color: var(--vscode-descriptionForeground);
-      font-size: 11px;
-    }
-    .img-wrap {
-      min-height: 160px;
+    .status-row { display: flex; align-items: center; gap: 8px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--vscode-disabledForeground); }
+    .frame-wrap {
       border: 1px solid var(--vscode-panel-border);
       background: var(--vscode-sideBar-background);
+      min-height: 200px;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
     }
-    .img-wrap.skeleton::after {
-      content: "Loading...";
+    .frame-wrap.skeleton::after {
+      content: "Waiting for browser...";
       color: var(--vscode-descriptionForeground);
       font-size: 11px;
     }
-    img {
-      max-width: 100%;
-      max-height: 360px;
-      display: block;
+    img { max-width: 100%; max-height: 380px; display: block; }
+    .section-title {
+      color: var(--vscode-descriptionForeground);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin: 0;
     }
+    .log {
+      border: 1px solid var(--vscode-panel-border);
+      background: var(--vscode-textCodeBlock-background);
+      max-height: 220px;
+      overflow-y: auto;
+      padding: 6px 8px;
+      font-family: var(--vscode-editor-font-family, monospace);
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .log-entry { white-space: pre-wrap; word-break: break-word; }
+    .log-entry.error { color: var(--vscode-errorForeground); }
+    .log-entry.warn { color: var(--vscode-charts-yellow); }
     .report {
       display: none;
       border: 1px solid var(--vscode-panel-border);
@@ -89,6 +65,8 @@
       word-break: break-word;
       font-family: var(--vscode-editor-font-family, monospace);
       font-size: 11px;
+      max-height: 240px;
+      overflow-y: auto;
     }
   </style>
 </head>
@@ -98,120 +76,86 @@
     <span id="status-text">Ready</span>
   </div>
 
-  <div id="tabs" class="tabs">
-    <button id="tab-desktop" class="tab">Desktop</button>
-    <button id="tab-mobile" class="tab">Mobile</button>
-  </div>
+  <p class="section-title">Live frame</p>
+  <div id="frame-wrap" class="frame-wrap skeleton"><img id="frame-img" alt="Live frame" /></div>
 
-  <div class="image-row">
-    <div class="cell">
-      <div class="label">Before</div>
-      <div id="before-wrap" class="img-wrap skeleton"><img id="before-img" alt="Before" /></div>
-    </div>
-    <div class="cell">
-      <div class="label">After</div>
-      <div id="after-wrap" class="img-wrap skeleton"><img id="after-img" alt="After" /></div>
-    </div>
-    <div class="cell">
-      <div class="label">Diff</div>
-      <div id="diff-wrap" class="img-wrap skeleton"><img id="diff-img" alt="Diff" /></div>
-    </div>
-  </div>
+  <p class="section-title">Activity</p>
+  <div id="log" class="log"></div>
 
+  <p class="section-title">Last result</p>
   <pre id="report" class="report"></pre>
 
   <script>
-    const state = {
-      selected: "desktop",
-      hasDesktop: false,
-      hasMobile: false,
-      frames: {
-        desktop: { before: "", after: "", diff: "" },
-        mobile: { before: "", after: "", diff: "" }
-      }
-    };
-
     const statusDot = document.getElementById("status-dot");
     const statusText = document.getElementById("status-text");
-    const tabs = document.getElementById("tabs");
-    const tabDesktop = document.getElementById("tab-desktop");
-    const tabMobile = document.getElementById("tab-mobile");
+    const frameWrap = document.getElementById("frame-wrap");
+    const frameImg = document.getElementById("frame-img");
+    const logEl = document.getElementById("log");
     const report = document.getElementById("report");
 
-    const beforeWrap = document.getElementById("before-wrap");
-    const afterWrap = document.getElementById("after-wrap");
-    const diffWrap = document.getElementById("diff-wrap");
-    const beforeImg = document.getElementById("before-img");
-    const afterImg = document.getElementById("after-img");
-    const diffImg = document.getElementById("diff-img");
-
-    function updateTabs() {
-      const showTabs = state.hasDesktop || state.hasMobile;
-      tabs.style.display = showTabs ? "flex" : "none";
-      tabDesktop.style.display = state.hasDesktop ? "inline-flex" : "none";
-      tabMobile.style.display = state.hasMobile ? "inline-flex" : "none";
-      tabDesktop.classList.toggle("active", state.selected === "desktop");
-      tabMobile.classList.toggle("active", state.selected === "mobile");
-    }
-
-    function updateImages() {
-      const frames = state.frames[state.selected];
-      const beforeSrc = frames.before ? `data:image/png;base64,${frames.before}` : "";
-      const afterSrc = frames.after ? `data:image/png;base64,${frames.after}` : "";
-      const diffSrc = frames.diff ? `data:image/png;base64,${frames.diff}` : "";
-
-      beforeImg.src = beforeSrc;
-      afterImg.src = afterSrc;
-      diffImg.src = diffSrc;
-
-      beforeWrap.classList.toggle("skeleton", !beforeSrc);
-      afterWrap.classList.toggle("skeleton", !afterSrc);
-      diffWrap.classList.toggle("skeleton", !diffSrc);
-    }
+    const MAX_LOG = 80;
 
     function setDot(colorVar) {
       statusDot.style.background = `var(${colorVar})`;
     }
 
-    function totalDiffPixels(checks) {
-      return checks.reduce((sum, item) => sum + (item.diffPixels || 0), 0);
+    function appendLog(level, message) {
+      const div = document.createElement("div");
+      div.className = `log-entry ${level || "info"}`;
+      const time = new Date().toLocaleTimeString();
+      div.textContent = `${time}  ${message}`;
+      logEl.appendChild(div);
+      while (logEl.children.length > MAX_LOG) {
+        logEl.removeChild(logEl.firstChild);
+      }
+      logEl.scrollTop = logEl.scrollHeight;
     }
 
-    tabDesktop.addEventListener("click", () => {
-      state.selected = "desktop";
-      updateTabs();
-      updateImages();
-    });
-    tabMobile.addEventListener("click", () => {
-      state.selected = "mobile";
-      updateTabs();
-      updateImages();
-    });
+    function setFrame(base64) {
+      if (!base64) {
+        frameWrap.classList.add("skeleton");
+        frameImg.removeAttribute("src");
+        return;
+      }
+      frameWrap.classList.remove("skeleton");
+      frameImg.src = `data:image/png;base64,${base64}`;
+    }
 
     window.addEventListener("message", (event) => {
       const msg = event.data;
-      if (!msg || !msg.type) {
+      if (!msg || !msg.type) return;
+
+      if (msg.type === "log") {
+        appendLog(msg.level, msg.message);
+        return;
+      }
+
+      if (msg.type === "frame") {
+        setFrame(msg.data);
+        appendLog("info", `frame: ${msg.label} (${msg.viewport})`);
         return;
       }
 
       if (msg.type === "status") {
         if (msg.state === "running") {
           setDot("--vscode-charts-yellow");
-          if (msg.device === "both") {
-            statusText.textContent = "Checking desktop and mobile...";
-          } else {
-            statusText.textContent = `Checking ${msg.device}...`;
-          }
+          statusText.textContent = msg.url ? `Running on ${msg.url}` : "Running...";
           report.style.display = "none";
+          report.textContent = "";
+          appendLog("info", `start: ${msg.url || ""}`);
         } else if (msg.state === "done" && msg.result) {
-          const total = totalDiffPixels(msg.result.checks || []);
           if (msg.result.status === "PASS") {
             setDot("--vscode-testing-iconPassed");
-            statusText.textContent = `PASS - ${total}px changed`;
+            statusText.textContent = `PASS`;
           } else {
             setDot("--vscode-testing-iconFailed");
-            statusText.textContent = `FAIL - ${total}px changed`;
+            const why = msg.result.failureType || "fail";
+            statusText.textContent = `FAIL — ${why}`;
           }
+          appendLog(
+            msg.result.status === "PASS" ? "info" : "error",
+            `done: ${msg.result.status}${msg.result.errorMessage ? " — " + msg.result.errorMessage : ""}`
+          );
           report.style.display = "block";
           report.textContent = JSON.stringify(msg.result, null, 2);
         } else {
@@ -219,26 +163,10 @@
           statusText.textContent = "Ready";
         }
       }
-
-      if (msg.type === "frame") {
-        state.frames[msg.viewport][msg.label] = msg.data;
-        if (msg.viewport === "desktop") {
-          state.hasDesktop = true;
-        }
-        if (msg.viewport === "mobile") {
-          state.hasMobile = true;
-        }
-        if (!state.hasDesktop && state.hasMobile) {
-          state.selected = "mobile";
-        }
-        updateTabs();
-        updateImages();
-      }
     });
 
     setDot("--vscode-disabledForeground");
-    updateTabs();
-    updateImages();
+    appendLog("info", "VisionDev panel ready. Waiting for CLI...");
   </script>
 </body>
 </html>
